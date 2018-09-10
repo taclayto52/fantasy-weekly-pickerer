@@ -1,0 +1,12 @@
+[
+    {
+        "home": {
+            "team": "CAR",
+            "score": 50
+        }, 
+        "away": {
+            "team": "DAL",
+            "score": 25
+        }
+    }
+]
