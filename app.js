@@ -5,44 +5,99 @@ var loginCreds = {
     pass: 'Darthvader123',
 };
 var cookieJar = rp.jar();
-
-var loginRequestOptions = {
-    method: 'POST',
-    uri: 'http://www.thehuddle.com/login.php',
-    formData: {
-        user: loginCreds.user,
-        pass: loginCreds.pass,
-        submit: 'Login'
-    },
-    jar: cookieJar
-};
 var currentWeek = '01';
 
-var getGamePredictionsOptions = {
-    method: 'GET',
-    uri: 'http://thehuddle.com/2018/season/' + currentWeek + '/game-predictions-summary.php',
-    jar: cookieJar
-};
 
-// var lineReturnRegEx = /[\n\r\f]/gi;
 var lineReturnRegEx = /\s/gi;
 var predictionsRegEx = /STARTPRINTIT.*<ul.*?>(.*)<\/ul>.*ENDPRINTIT/;
 
 function main(){
-    rp(loginRequestOptions)
+    if(process.argv[2]){
+        currentWeek = process.argv[2].trim();
+    }
+
+    login()
         .then(function (response){
             console.log('login success');
-            rp(getGamePredictionsOptions)
+            getGameSummaryPredictions(currentWeek)
                 .then(function (predictionsResponse){
                     predictionsResponse = predictionsResponse.replace(lineReturnRegEx, '');
-                    // console.log('no LRs:', predictionsResponse);
-                    var match = predictionsResponse.match(predictionsRegEx);
-                    console.log('match:', match[1]);
+                    var table = predictionsResponse.match(predictionsRegEx);
+
+                    scoreObject = iterateThroughLinesInTable(table[1]);
+                    console.log(scoreObject);
                 });
         })
         .catch(function (err){
-            console.log('error in main');
+            console.log('error in main:', err);
         });
+}
+
+function login(){
+    var loginRequestOptions = {
+        method: 'POST',
+        uri: 'http://www.thehuddle.com/login.php',
+        formData: {
+            user: loginCreds.user,
+            pass: loginCreds.pass,
+            submit: 'Login'
+        },
+        jar: cookieJar
+    };
+    return rp(loginRequestOptions);
+}
+
+function getGameSummaryPredictions(week) {
+    var getGamePredictionsOptions = {
+        method: 'GET',
+        uri: 'http://thehuddle.com/2018/season/' + week + '/game-predictions-summary.php',
+        jar: cookieJar
+    };
+    return rp(getGamePredictionsOptions);
+}
+
+function iterateThroughLinesInTable(table) {
+    var teamScoreObjArray = [];
+
+    var lineRegEx = /<li>(.*?)<\/li>/;
+    var nextLine = lineRegEx.exec(table);
+    // console.log('nextLine match:', nextLine[1]);
+    // console.log('nextLine index:', nextLine.index);
+    // console.log('nextLine index:', table.slice(nextLine.index + nextLine[0].length));
+    while(nextLine[1] && nextLine.index >= 0){
+        teamScoreObjArray.push(extractScoreFromLine(nextLine[1]));
+        table = table.slice(nextLine.index + nextLine[0].length);
+
+        nextLine = lineRegEx.exec(table);
+    }
+    return teamScoreObjArray;
+}
+
+function extractScoreFromLine(line) {
+    var scoreRegEx = /(<strong><.*?\.php">|strong>)(.*?),(.*?)</;
+    scoreMatch = scoreRegEx.exec(line);
+    // console.log('extract score from line input:', line);
+    // console.log('first match:', scoreMatch[1]);
+    // console.log('Away Team:', scoreMatch[2], ' Home Team:', scoreMatch[3]);
+
+    // console.log(convertScoreToObj(scoreMatch[2], scoreMatch[3]));
+    return convertScoreToObj(scoreMatch[2], scoreMatch[3]);
+}
+
+function convertScoreToObj(awayScore, homeScore){
+    var teamAndScoreRegex = /(^\D*)(\d*$)/;
+    var awayMatch = teamAndScoreRegex.exec(awayScore);
+    var homeMatch = teamAndScoreRegex.exec(homeScore);
+    return {
+        "home": {
+            "team": homeMatch[1],
+            "score": homeMatch[2]
+        },
+        "away": {
+            "team": awayMatch[1],
+            "score": awayMatch[2]
+        }
+    };
 }
 
 main();
