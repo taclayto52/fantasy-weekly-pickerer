@@ -25,7 +25,9 @@ function main(){
                     var table = predictionsResponse.match(predictionsRegEx);
 
                     scoreObject = iterateThroughLinesInTable(table[1]);
-                    console.log(scoreObject);
+                    // console.log(scoreObject);
+
+                    displayPickOrderInConsole(scoreObject);
                 });
         })
         .catch(function (err){
@@ -64,7 +66,7 @@ function iterateThroughLinesInTable(table) {
     // console.log('nextLine match:', nextLine[1]);
     // console.log('nextLine index:', nextLine.index);
     // console.log('nextLine index:', table.slice(nextLine.index + nextLine[0].length));
-    while(nextLine[1] && nextLine.index >= 0){
+    while(nextLine && nextLine[1] && nextLine.index >= 0){
         teamScoreObjArray.push(extractScoreFromLine(nextLine[1]));
         table = table.slice(nextLine.index + nextLine[0].length);
 
@@ -88,7 +90,8 @@ function convertScoreToObj(awayScore, homeScore){
     var teamAndScoreRegex = /(^\D*)(\d*$)/;
     var awayMatch = teamAndScoreRegex.exec(awayScore);
     var homeMatch = teamAndScoreRegex.exec(homeScore);
-    return {
+    
+    var matchObj = {
         "home": {
             "team": homeMatch[1],
             "score": homeMatch[2]
@@ -98,6 +101,35 @@ function convertScoreToObj(awayScore, homeScore){
             "score": awayMatch[2]
         }
     };
+    var comparisonFieldValue = buildComparison(matchObj);
+    matchObj['comparison'] = comparisonFieldValue;
+    return matchObj;
+}
+
+function buildComparison(matchObj){
+    var winningTeam = null;
+    if(matchObj.home.score === matchObj.away.score) {
+        console.log('tie detected');
+        winningTeam = 'TIE';
+    }
+    else{
+        winningTeam = matchObj.home.score > matchObj.away.score ? matchObj.home.team : matchObj.away.team;
+    }
+    var scoreDiff = Math.abs(matchObj.home.score - matchObj.away.score);
+    return {
+        'winningTeam': winningTeam,
+        'scoreDiff': scoreDiff
+    };
+}
+
+function displayPickOrderInConsole(scoreObject){
+    scoreObject.sort(function(a, b){
+        return b.comparison.scoreDiff - a.comparison.scoreDiff;
+    });
+    
+    scoreObject.forEach(function(value){
+        console.log('Matchup:', value.away.team, '@', value.home.team, '-', value.comparison.winningTeam, 'wins by', value.comparison.scoreDiff);
+    });
 }
 
 main();
