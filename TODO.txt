@@ -1,0 +1,3 @@
+- Enable to make picks for me
+- Set tolerance where it asks for user input if score is not one-sided enough
+- Add sorting for players as well based on my lineup
