@@ -1,8 +1,9 @@
 var rp = require('request-promise');
+var config = require('./config.js')
 
 var loginCreds = {
-  user: 'mcharri7',
-  pass: 'Darthvader123',
+  user: config.huddleUsername,
+  pass: config.huddlePassword,
 };
 var cookieJar = rp.jar();
 var currentWeek = '01';
