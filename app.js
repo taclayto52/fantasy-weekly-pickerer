@@ -7,33 +7,54 @@ var loginCreds = {
 };
 var cookieJar = rp.jar();
 var currentWeek = '01';
-
+const defaultAction = 'pickem';
 
 var lineReturnRegEx = /\s/gi;
 var predictionsRegEx = /STARTPRINTIT.*<ul.*?>(.*)<\/ul>.*ENDPRINTIT/;
 
 function main() {
+  var action = defaultAction;
   if (process.argv[2]) {
-    currentWeek = process.argv[2].trim();
+    action = process.argv[2].trim();
   }
 
+  switch(action) {
+    case 'pickem': {
+      if(process.argv[3]){
+        currentWeek = process.argv[3];
+      }
+      getWeeklyGamePredictions(currentWeek);
+      break;
+    }
+    default: {
+      if(process.argv[2]){
+        currentWeek = process.argv[2];
+      }
+      getWeeklyGamePredictions(currentWeek);
+      break;
+    }
+  }
+
+}
+
+function getWeeklyGamePredictions(currenWeek) {
   login()
-    .then(function(response) {
-      console.log('login success');
-      getGameSummaryPredictions(currentWeek)
-        .then(function(predictionsResponse) {
-          predictionsResponse = predictionsResponse.replace(lineReturnRegEx, '');
-          var table = predictionsResponse.match(predictionsRegEx);
+  .then(function(response) {
+    console.log('login success');
+    getGameSummaryPredictions(currentWeek)
+      .then(function(predictionsResponse) {
+        predictionsResponse = predictionsResponse.replace(lineReturnRegEx, '');
+        var table = predictionsResponse.match(predictionsRegEx);
 
-          scoreObject = iterateThroughLinesInTable(table[1]);
-          // console.log(scoreObject);
+        scoreObject = iterateThroughLinesInTable(table[1]);
+        // console.log(scoreObject);
 
-          displayPickOrderInConsole(scoreObject);
-        });
-    })
-    .catch(function(err) {
-      console.log('error in main:', err);
-    });
+        displayPickOrderInConsole(scoreObject);
+      });
+  })
+  .catch(function(err) {
+    console.log('error in main:', err);
+  });
 }
 
 function login() {
@@ -95,11 +116,11 @@ function convertScoreToObj(awayScore, homeScore) {
   var matchObj = {
     "home": {
       "team": homeMatch[1],
-      "score": homeMatch[2]
+      "score": parseInt(homeMatch[2])
     },
     "away": {
       "team": awayMatch[1],
-      "score": awayMatch[2]
+      "score": parseInt(awayMatch[2])
     }
   };
   var comparisonFieldValue = buildComparison(matchObj);
