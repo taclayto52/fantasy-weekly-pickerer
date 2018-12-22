@@ -98,7 +98,7 @@ function iterateThroughLinesInTable(table) {
 }
 
 function extractScoreFromLine(line) {
-  var scoreRegEx = /(<strong><.*?\.php">|strong>)(.*?),(.*?)</;
+  var scoreRegEx = /(<strong><.*?\.php">|strong>)(.*?),(.*?)(<\/strong>.*?|\(Line.*?)</;
   scoreMatch = scoreRegEx.exec(line);
   // console.log('extract score from line input:', line);
   // console.log('first match:', scoreMatch[1]);
